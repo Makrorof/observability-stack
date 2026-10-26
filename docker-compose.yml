@@ -17,7 +17,8 @@ name: observability
 
 services:
   alloy:
-    image: grafana/alloy:v1.21.2
+    build:
+      context: ./alloy
     restart: unless-stopped
     command:
       - run
@@ -27,7 +28,6 @@ services:
     environment:
       FARO_CORS_ALLOWED_ORIGINS: "${FARO_CORS_ALLOWED_ORIGINS:-*}"
     volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloy-data:/var/lib/alloy/data
     ports:
       - "${OTLP_GRPC_PORT:-4317}:4317"
@@ -42,7 +42,8 @@ services:
       - observability-net
 
   prometheus:
-    image: prom/prometheus:v3.15.1
+    build:
+      context: ./prometheus
     restart: unless-stopped
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -51,7 +52,6 @@ services:
       - --web.enable-remote-write-receiver
       - --enable-feature=exemplar-storage
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     expose:
       - "9090"
@@ -59,11 +59,11 @@ services:
       - observability-net
 
   tempo:
-    image: grafana/tempo:2.10.10
+    build:
+      context: ./tempo
     restart: unless-stopped
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     volumes:
-      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
     expose:
       - "3200"
@@ -73,11 +73,11 @@ services:
       - observability-net
 
   loki:
-    image: grafana/loki:3.7.9
+    build:
+      context: ./loki
     restart: unless-stopped
     command: ["-config.file=/etc/loki/loki.yaml"]
     volumes:
-      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
       - loki-data:/loki
     expose:
       - "3100"
@@ -85,7 +85,8 @@ services:
       - observability-net
 
   grafana:
-    image: grafana/grafana:13.0.11
+    build:
+      context: ./grafana
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
@@ -95,8 +96,6 @@ services:
       GF_AUTH_ANONYMOUS_ORG_NAME: "${GF_AUTH_ANONYMOUS_ORG_NAME:-Main Org.}"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "${GF_AUTH_ANONYMOUS_ORG_ROLE:-Admin}"
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports:
       - "${GRAFANA_PORT:-3000}:3000"

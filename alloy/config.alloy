@@ -75,7 +75,9 @@ loki.process "faro" {
     mapping = {
       "kind"            = "kind",
       "app"             = "app_name",
+      "application"     = "app_name",
       "app_name"        = "app_name",
+      "environment"     = "app_environment",
       "app_environment" = "app_environment",
     }
   }
@@ -83,7 +85,9 @@ loki.process "faro" {
     values = {
       "kind"            = "",
       "app"             = "",
+      "application"     = "",
       "app_name"        = "",
+      "environment"     = "",
       "app_environment" = "",
     }
   }

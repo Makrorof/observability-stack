@@ -1,0 +1,118 @@
+# =============================================================================
+# Shared Observability Stack (Grafana LGTM: Loki, Grafana, Tempo, Prometheus + Alloy)
+#
+# A complete, portable, production-ready observability platform for any microservice
+# or application stack. Ingests OpenTelemetry (OTLP) traces, metrics, logs,
+# and Grafana Faro browser Real User Monitoring (RUM).
+#
+# Ports exposed:
+#   - 3000  : Grafana Web UI
+#   - 4317  : Alloy OTLP gRPC receiver (traces, metrics, logs)
+#   - 4318  : Alloy OTLP HTTP receiver (traces, metrics, logs)
+#   - 12347 : Alloy Faro receiver (/collect endpoint for frontend RUM)
+#   - 12345 : Alloy internal UI & debug metrics
+# =============================================================================
+
+name: observability
+
+services:
+  alloy:
+    image: grafana/alloy:v1.21.2
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      FARO_CORS_ALLOWED_ORIGINS: "${FARO_CORS_ALLOWED_ORIGINS:-*}"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy-data:/var/lib/alloy/data
+    ports:
+      - "${OTLP_GRPC_PORT:-4317}:4317"
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+      - "${FARO_PORT:-12347}:12347"
+      - "${ALLOY_UI_PORT:-12345}:12345"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    networks:
+      - observability-net
+
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    expose:
+      - "9090"
+    networks:
+      - observability-net
+
+  tempo:
+    image: grafana/tempo:2.10.10
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    expose:
+      - "3200"
+      - "4317"
+      - "4318"
+    networks:
+      - observability-net
+
+  loki:
+    image: grafana/loki:3.7.9
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    expose:
+      - "3100"
+    networks:
+      - observability-net
+
+  grafana:
+    image: grafana/grafana:13.0.11
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    name: observability-net
+    driver: bridge
+
+volumes:
+  alloy-data:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-data:

@@ -1,0 +1,87 @@
+// =============================================================================
+// Grafana Alloy — Unified OTLP & Faro Telemetry Ingestion Pipeline
+// =============================================================================
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// ---------- OTLP Ingestion (Backend Services & Daemons) ----------
+otelcol.receiver.otlp "default" {
+  grpc { endpoint = "0.0.0.0:4317" }
+  http { endpoint = "0.0.0.0:4318" }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// Metrics → Prometheus (remote_write)
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+    send_exemplars = true
+  }
+}
+
+// Logs → Loki Native OTLP Endpoint (preserves trace_id/span_id as structured metadata)
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+  }
+}
+
+// Traces → Tempo
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// ---------- Faro (Browser RUM) Ingestion ----------
+faro.receiver "frontend" {
+  server {
+    listen_address       = "0.0.0.0"
+    listen_port          = 12347
+    cors_allowed_origins = string.split(sys.env("FARO_CORS_ALLOWED_ORIGINS"), ",")
+  }
+
+  output {
+    logs   = [loki.process.faro.receiver]
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// Faro emits logfmt lines (kind=exception|log|measurement|event, app_name=..., etc.)
+loki.process "faro" {
+  stage.logfmt {
+    mapping = { "kind" = "", "app_name" = "", "app_environment" = "" }
+  }
+  stage.labels {
+    values = { "kind" = "", "app_name" = "", "app_environment" = "" }
+  }
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

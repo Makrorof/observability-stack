@@ -40,10 +40,10 @@ services:
       - loki
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:12345/-/ready || exit 1"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 45s
     networks:
       - observability-net
 
@@ -62,11 +62,11 @@ services:
     expose:
       - "9090"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/ready"]
-      interval: 15s
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:9090/-/ready || exit 1"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 45s
     networks:
       - observability-net
 
@@ -83,10 +83,10 @@ services:
       - "4318"
     healthcheck:
       test: ["CMD", "/tempo", "--health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 45s
     networks:
       - observability-net
 
@@ -101,10 +101,10 @@ services:
       - "3100"
     healthcheck:
       test: ["CMD", "/usr/bin/loki", "-health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 45s
     networks:
       - observability-net
 
@@ -129,10 +129,10 @@ services:
       - loki
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 10
+      start_period: 45s
     networks:
       - observability-net
 

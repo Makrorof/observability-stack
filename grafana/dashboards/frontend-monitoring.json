@@ -426,13 +426,13 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "avg_over_time({kind=\"measurement\",app_environment=~\"$env\",app_name=~\"$app\"} |= \" fid=\" | logfmt | unwrap fid [$__range]) by (app_name)",
+          "expr": "avg_over_time({kind=\"measurement\",app_environment=~\"$env\",app_name=~\"$app\"} |= \" inp=\" | logfmt | unwrap inp [$__range]) by (app_name)",
           "legendFormat": "FID",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "First Input Delay (FID)",
+      "title": "Interaction to Next Paint (INP / T\u0131klama Tepki S\u00fcresi)",
       "type": "stat"
     },
     {
@@ -465,13 +465,14 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "avg_over_time({kind=\"measurement\",app_name=~\"$app\"} |= \" fid=\" | logfmt | unwrap fid [$__range]) by (app_name)",
+          "expr": "avg_over_time({kind=\"measurement\",app_name=~\"$app\"} |= \" inp=\" | logfmt | unwrap inp [$__range]) by (app_name)",
           "legendFormat": "FID",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "type": "text"
+      "type": "text",
+      "title": "INP Stat"
     },
     {
       "datasource": {
@@ -777,13 +778,13 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "quantile_over_time(0.75, {kind=\"measurement\",app_environment=~\"$env\",app_name=~\"$app\"} |= \" fid=\" | logfmt | unwrap fid [5m]) by (app_name)",
+          "expr": "quantile_over_time(0.75, {kind=\"measurement\",app_environment=~\"$env\",app_name=~\"$app\"} |= \" inp=\" | logfmt | unwrap inp [5m]) by (app_name)",
           "legendFormat": "FID",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "First Input Delay, p75",
+      "title": "Interaction to Next Paint, p75",
       "type": "timeseries"
     },
     {
@@ -1681,7 +1682,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "topk(50, count(count_over_time({kind=\"event\",app_environment=~\"$env\",app_name=~\"$app\"} | logfmt | event_name = \"mainspa_mount\" [$__range])) by (user_id))",
+          "expr": "topk(50, count(count_over_time({kind=\"event\",app_environment=~\"$env\",app_name=~\"$app\"} | logfmt [$__range])) by (user_id))",
           "queryType": "instant",
           "refId": "A"
         }

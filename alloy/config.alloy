@@ -72,10 +72,20 @@ faro.receiver "frontend" {
 // Faro emits logfmt lines (kind=exception|log|measurement|event, app_name=..., etc.)
 loki.process "faro" {
   stage.logfmt {
-    mapping = { "kind" = "", "app_name" = "", "app_environment" = "" }
+    mapping = {
+      "kind"            = "kind",
+      "app"             = "app_name",
+      "app_name"        = "app_name",
+      "app_environment" = "app_environment",
+    }
   }
   stage.labels {
-    values = { "kind" = "", "app_name" = "", "app_environment" = "" }
+    values = {
+      "kind"            = "",
+      "app"             = "",
+      "app_name"        = "",
+      "app_environment" = "",
+    }
   }
   forward_to = [loki.write.default.receiver]
 }

@@ -1682,7 +1682,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "topk(50, count(count_over_time({kind=\"event\",app_environment=~\"$env\",app_name=~\"$app\"} | logfmt [$__range])) by (user_id))",
+          "expr": "topk(50, count(count_over_time({app_environment=~\"$env\",app_name=~\"$app\"} | logfmt | user_id != \"\" [$__range])) by (user_id, user_username))",
           "queryType": "instant",
           "refId": "A"
         }
@@ -1698,8 +1698,8 @@
             "indexByName": {},
             "renameByName": {
               "Value #A": "Count",
-              "event_name": "Name",
-              "value": "Error"
+              "user_id": "User ID",
+              "user_username": "Username"
             }
           }
         }
